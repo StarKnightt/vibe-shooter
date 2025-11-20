@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { GameState, Entity, EntityType, Vector2, PlayerStats, AnomalyEvent } from '../types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, COLORS, PLAYER_SPEED, ENEMY_SPEED, BULLET_SPEED, FRICTION } from '../constants';
+import { playPlayerShootSound, playEnemyShootSound, playExplosionSound, playCollectSound, playHealthSound, playDamageSound, playAnomalySound } from '../services/audioService';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -67,7 +68,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       mouse.current = { x: e.clientX, y: e.clientY };
     };
-    const handleMouseDown = (e: MouseEvent) => { keys.current['MouseLeft'] = true; };
+    const handleMouseDown = (e: MouseEvent) => { 
+        keys.current['MouseLeft'] = true;
+        // Init audio on first interaction if needed
+    };
     const handleMouseUp = (e: MouseEvent) => { keys.current['MouseLeft'] = false; };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -163,6 +167,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         life: 60, // frames
         owner: 'PLAYER'
       });
+      playPlayerShootSound(); // Sound
       lastShotTime.current = now;
     }
 
@@ -254,9 +259,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
              const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
              if (dist < p.radius + ent.radius) {
                  p.health -= 5; // Enemy bullet damage
+                 playDamageSound(); // Sound
                  createParticles(ent.pos, 3, COLORS.PLAYER);
                  entities.current.splice(i, 1);
-                 if (p.health <= 0) setGameState(GameState.GAME_OVER);
+                 if (p.health <= 0) {
+                     playExplosionSound(); // Game Over sound
+                     setGameState(GameState.GAME_OVER);
+                 }
                  continue;
              }
         }
@@ -287,15 +296,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 life: 80,
                 owner: 'ENEMY'
             });
+            // playEnemyShootSound(); // Optional: might be too noisy if many enemies
         }
 
         // Collision with Player
         const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
         if (dist < p.radius + ent.radius) {
           p.health -= 10;
+          playDamageSound(); // Sound
           createParticles(ent.pos, 5, COLORS.PLAYER);
           entities.current.splice(i, 1);
-          if (p.health <= 0) setGameState(GameState.GAME_OVER);
+          if (p.health <= 0) {
+              playExplosionSound();
+              setGameState(GameState.GAME_OVER);
+          }
           continue;
         }
       } else if (ent.type === EntityType.SCRAP) {
@@ -308,6 +322,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           // Collect
           if (dist < p.radius + ent.radius) {
               setStats(prev => ({ ...prev, scrap: prev.scrap + (ent.value || 1) }));
+              playCollectSound(); // Sound
               entities.current.splice(i, 1);
               continue;
           }
@@ -316,6 +331,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ent.radius = 25 + Math.sin(Date.now() * 0.005) * 5;
           const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
           if (dist < p.radius + ent.radius) {
+              playAnomalySound(); // Sound
               triggerAnomaly(); // Pause and call Gemini
               entities.current.splice(i, 1);
               continue;
@@ -327,6 +343,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (dist < p.radius + ent.radius) {
               // Heal Player
               p.health = Math.min(p.maxHealth, p.health + (ent.value || 20));
+              playHealthSound(); // Sound
               createParticles(ent.pos, 10, COLORS.HEALTH); // Green particles
               entities.current.splice(i, 1);
               continue;
@@ -344,6 +361,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               entities.current.splice(j, 1); // Remove bullet
               if (ent.health <= 0) {
                 createParticles(ent.pos, 8, COLORS.ENEMY);
+                playExplosionSound(); // Sound
                 // Drop Scrap
                 entities.current.push({
                     id: `scrap-${Date.now()}`,
