@@ -29,6 +29,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const scoreRef = useRef(0);
   const lastShotTime = useRef(0);
   const enemySpawnTimer = useRef(0);
+  const healthSpawnTimer = useRef(0);
   const lastAnomalyScore = useRef(0);
   
   // Initialize Game
@@ -47,6 +48,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     entities.current = [];
     scoreRef.current = 0;
     lastAnomalyScore.current = 0;
+    healthSpawnTimer.current = 0;
     
     // Sync initial stats
     setStats({
@@ -190,6 +192,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
     }
 
+    // --- Health Pickup Spawning ---
+    healthSpawnTimer.current += 1;
+    if (healthSpawnTimer.current > 900) { // Spawn every ~15 seconds (60fps * 15)
+      healthSpawnTimer.current = 0;
+      if (Math.random() > 0.3) { // 70% chance to spawn when timer hits
+        entities.current.push({
+          id: `health-${Date.now()}`,
+          type: EntityType.HEALTH_PICKUP,
+          pos: { x: Math.random() * (CANVAS_WIDTH - 100) + 50, y: Math.random() * (CANVAS_HEIGHT - 100) + 50 },
+          vel: { x: 0, y: 0 },
+          radius: 15,
+          color: COLORS.HEALTH,
+          health: 1,
+          maxHealth: 1,
+          rotation: 0,
+          value: 20 // Heal amount
+        });
+      }
+    }
+
     // --- Anomalies (Gemini Trigger) ---
     // Trigger every 500 score
     if (scoreRef.current - lastAnomalyScore.current >= 500) {
@@ -295,6 +317,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
           if (dist < p.radius + ent.radius) {
               triggerAnomaly(); // Pause and call Gemini
+              entities.current.splice(i, 1);
+              continue;
+          }
+      } else if (ent.type === EntityType.HEALTH_PICKUP) {
+          // Pulsate
+          ent.radius = 15 + Math.sin(Date.now() * 0.005) * 2;
+          const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
+          if (dist < p.radius + ent.radius) {
+              // Heal Player
+              p.health = Math.min(p.maxHealth, p.health + (ent.value || 20));
+              createParticles(ent.pos, 10, COLORS.HEALTH); // Green particles
               entities.current.splice(i, 1);
               continue;
           }
@@ -453,6 +486,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.fill();
           ctx.shadowBlur = 20;
           ctx.shadowColor = '#a855f7';
+      } else if (ent.type === EntityType.HEALTH_PICKUP) {
+          // Green cross icon
+          ctx.fillStyle = ent.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, ent.radius, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = ent.color;
+          ctx.stroke();
+
+          // Draw White Cross
+          ctx.fillStyle = '#ffffff';
+          const w = 6; // width of cross bars
+          const l = 16; // length of cross bars
+          ctx.fillRect(-w/2, -l/2, w, l);
+          ctx.fillRect(-l/2, -w/2, l, w);
       }
       
       ctx.restore();

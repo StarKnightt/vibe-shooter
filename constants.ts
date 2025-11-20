@@ -13,7 +13,8 @@ export const COLORS = {
   BULLET: '#fef08a', // Yellow 200
   SCRAP: '#fbbf24', // Amber 400
   ANOMALY: '#a855f7', // Purple 500
-  BG: '#0f172a' // Slate 900
+  BG: '#0f172a', // Slate 900
+  HEALTH: '#22c55e' // Green 500
 };
 
 export const KEY_CODES = {

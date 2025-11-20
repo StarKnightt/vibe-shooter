@@ -13,7 +13,8 @@ export enum EntityType {
   BULLET = 'BULLET',
   PARTICLE = 'PARTICLE',
   SCRAP = 'SCRAP',
-  ANOMALY_CORE = 'ANOMALY_CORE'
+  ANOMALY_CORE = 'ANOMALY_CORE',
+  HEALTH_PICKUP = 'HEALTH_PICKUP'
 }
 
 export interface Vector2 {

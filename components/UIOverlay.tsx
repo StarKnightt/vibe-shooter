@@ -115,7 +115,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
               <Heart className="text-red-500" size={20} />
             </div>
             <div>
-              <div className="text-xs text-gray-400 uppercase font-bold">Hull Integrity</div>
+              <div className="text-xs text-gray-400 uppercase font-bold">Health 💖</div>
               <div className="text-xl font-mono text-white">
                 {Math.max(0, Math.round(stats.health))} / {stats.maxHealth}
               </div>
@@ -140,17 +140,31 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           </div>
         </div>
 
-        {/* Score */}
-        <div className="text-right">
-          <div className="text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-            {stats.score.toString().padStart(6, '0')}
-          </div>
-          <div className="text-sm text-cyan-400 uppercase tracking-[0.3em]">Current Score</div>
+        {/* Score & Github */}
+        <div className="flex items-start gap-6 pointer-events-auto">
+            {/* GitHub Link */}
+            <a
+                href="https://github.com/StarKnightt/vibe-shooter"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-500 hover:text-white transition-all opacity-50 hover:opacity-100 bg-black/20 hover:bg-black/60 p-2 rounded-full backdrop-blur-sm h-fit"
+            >
+                <Github size={20} />
+                <span className="text-xs font-mono hidden group-hover:inline">/StarKnightt/vibe-shooter</span>
+            </a>
+
+            {/* Score */}
+            <div className="text-right pointer-events-none">
+                <div className="text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                    {stats.score.toString().padStart(6, '0')}
+                </div>
+                <div className="text-sm text-cyan-400 uppercase tracking-[0.3em]">Current Score</div>
+            </div>
         </div>
       </div>
 
       {/* Bottom Instructions */}
-      <div className="text-center opacity-50 text-sm font-mono text-white">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center opacity-50 text-sm font-mono text-white pointer-events-none">
          <span className="bg-white/10 px-2 py-1 rounded mx-1">WASD</span> THRUST 
          <span className="mx-2">•</span>
          <span className="bg-white/10 px-2 py-1 rounded mx-1">MOUSE</span> AIM 
