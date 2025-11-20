@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Rajdhani', sans-serif;
+  --font-display: 'Orbitron', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #050b14;
+  color: #e2e8f0;
+  overflow: hidden;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
