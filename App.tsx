@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { UIOverlay } from './components/UIOverlay';
 import { GameState, PlayerStats, AnomalyEvent } from './types';
 import { generateAnomaly } from './services/geminiService';
 
 const App: React.FC = () => {
-  const [gameState, setGameState] = useState<GameState>(GameState.MENU);
+  const [gameState, setGameState] = useState<GameState>(GameState.LOADING);
   const [stats, setStats] = useState<PlayerStats>({
     health: 100,
     maxHealth: 100,
@@ -28,8 +28,25 @@ const App: React.FC = () => {
     });
   };
 
+  // Simulate initial loading
+  useEffect(() => {
+    if (gameState === GameState.LOADING) {
+      const timer = setTimeout(() => {
+        startGame();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState]);
+
   const restartGame = () => {
     setGameState(GameState.PLAYING);
+    setStats({
+      health: 100,
+      maxHealth: 100,
+      scrap: 0,
+      score: 0,
+      level: 1
+    });
     setCurrentAnomaly(null);
     // Logic inside GameCanvas will re-init entities
   };

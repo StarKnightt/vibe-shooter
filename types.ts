@@ -1,5 +1,6 @@
 export enum GameState {
   MENU = 'MENU',
+  LOADING = 'LOADING',
   PLAYING = 'PLAYING',
   PAUSED = 'PAUSED',
   ANOMALY = 'ANOMALY',
@@ -33,6 +34,8 @@ export interface Entity {
   life?: number; // For particles/bullets
   maxLife?: number;
   value?: number; // For scrap
+  owner?: 'PLAYER' | 'ENEMY'; // Who fired the bullet
+  lastShot?: number; // For rate of fire
 }
 
 export interface PlayerStats {

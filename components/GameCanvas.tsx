@@ -143,26 +143,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const dy = mouse.current.y - p.pos.y;
     p.rotation = Math.atan2(dy, dx);
 
-    // --- Shooting ---
-    if (keys.current['MouseLeft']) {
-      const now = Date.now();
-      if (now - lastShotTime.current > 150) { // Fire rate
-        const bx = Math.cos(p.rotation);
-        const by = Math.sin(p.rotation);
-        entities.current.push({
-          id: `bullet-${now}`,
-          type: EntityType.BULLET,
-          pos: { x: p.pos.x + bx * 30, y: p.pos.y + by * 30 },
-          vel: { x: bx * BULLET_SPEED, y: by * BULLET_SPEED },
-          radius: 4,
-          color: COLORS.BULLET,
-          health: 1,
-          maxHealth: 1,
-          rotation: p.rotation,
-          life: 60 // frames
-        });
-        lastShotTime.current = now;
-      }
+    // --- Shooting (Automatic) ---
+    const now = Date.now();
+    if (now - lastShotTime.current > 150) { // Fire rate
+      const bx = Math.cos(p.rotation);
+      const by = Math.sin(p.rotation);
+      entities.current.push({
+        id: `bullet-${now}`,
+        type: EntityType.BULLET,
+        pos: { x: p.pos.x + bx * 30, y: p.pos.y + by * 30 },
+        vel: { x: bx * BULLET_SPEED, y: by * BULLET_SPEED },
+        radius: 4,
+        color: COLORS.BULLET,
+        health: 1,
+        maxHealth: 1,
+        rotation: p.rotation,
+        life: 60, // frames
+        owner: 'PLAYER'
+      });
+      lastShotTime.current = now;
     }
 
     // --- Enemy Spawning ---
@@ -186,7 +185,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         health: 20,
         maxHealth: 20,
         rotation: 0,
-        value: 10
+        value: 10,
+        lastShot: Date.now() + Math.random() * 1000 // Stagger initial shots
       });
     }
 
@@ -223,12 +223,49 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           entities.current.splice(i, 1);
           continue;
         }
+
+        // Player Bullet vs Enemy Collision handled in Enemy block loop for efficiency? 
+        // Actually current logic handles it in Enemy block.
+        // But we need to handle Enemy Bullet vs Player here or in Player block?
+        // Easier to handle "Bullet hitting Player" here if bullet owner is ENEMY
+        if (ent.owner === 'ENEMY') {
+             const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
+             if (dist < p.radius + ent.radius) {
+                 p.health -= 5; // Enemy bullet damage
+                 createParticles(ent.pos, 3, COLORS.PLAYER);
+                 entities.current.splice(i, 1);
+                 if (p.health <= 0) setGameState(GameState.GAME_OVER);
+                 continue;
+             }
+        }
+
       } else if (ent.type === EntityType.ENEMY) {
         // Chase player
         const angle = Math.atan2(p.pos.y - ent.pos.y, p.pos.x - ent.pos.x);
         ent.vel.x = Math.cos(angle) * ENEMY_SPEED;
         ent.vel.y = Math.sin(angle) * ENEMY_SPEED;
         ent.rotation = angle;
+
+        // Shooting Logic
+        const now = Date.now();
+        if (ent.lastShot && now - ent.lastShot > 1000) { // Fire every 1 second (Faster!)
+            ent.lastShot = now;
+            const bx = Math.cos(ent.rotation);
+            const by = Math.sin(ent.rotation);
+            entities.current.push({
+                id: `bullet-enemy-${now}-${Math.random()}`,
+                type: EntityType.BULLET,
+                pos: { x: ent.pos.x + bx * 20, y: ent.pos.y + by * 20 },
+                vel: { x: bx * (BULLET_SPEED * 0.8), y: by * (BULLET_SPEED * 0.8) }, // Faster enemy bullets
+                radius: 4,
+                color: '#ef4444', // Red bullets
+                health: 1,
+                maxHealth: 1,
+                rotation: ent.rotation,
+                life: 80,
+                owner: 'ENEMY'
+            });
+        }
 
         // Collision with Player
         const dist = Math.hypot(p.pos.x - ent.pos.x, p.pos.y - ent.pos.y);
@@ -263,11 +300,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           }
       }
 
-      // Collision: Bullet vs Enemy
+      // Collision: Bullet vs Enemy (Only Player Bullets)
       if (ent.type === EntityType.ENEMY) {
         for (let j = entities.current.length - 1; j >= 0; j--) {
           const bullet = entities.current[j];
-          if (bullet.type === EntityType.BULLET) {
+          if (bullet.type === EntityType.BULLET && bullet.owner === 'PLAYER') {
             const dist = Math.hypot(ent.pos.x - bullet.pos.x, ent.pos.y - bullet.pos.y);
             if (dist < ent.radius + bullet.radius) {
               ent.health -= 10;

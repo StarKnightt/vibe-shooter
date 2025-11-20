@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameState, PlayerStats, AnomalyEvent } from '../types';
-import { Heart, Loader2, ShieldAlert, Coins, Crosshair } from 'lucide-react';
+import { Heart, Loader2, ShieldAlert, Coins, Crosshair, Github } from 'lucide-react';
 
 interface UIOverlayProps {
   gameState: GameState;
@@ -22,30 +22,21 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
   loadingAnomaly
 }) => {
   
-  if (gameState === GameState.MENU) {
+  // Replaced MENU with LOADING screen
+  if (gameState === GameState.LOADING) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50 text-center p-4">
-        <div className="mb-8 animate-pulse">
-          <ShieldAlert size={64} className="text-cyan-400 mx-auto mb-4" />
-        </div>
-        <h1 className="text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 mb-6">
-          COSMIC SCAVENGER AI
-        </h1>
-        <p className="text-xl text-gray-400 mb-8 max-w-md font-light">
-          Pilot your ship through the endless void. Destroy drones, collect scrap, and face AI-generated anomalies.
-        </p>
-        <button
-          onClick={onStart}
-          className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold text-xl tracking-wider transition-all shadow-[0_0_20px_rgba(8,145,178,0.5)] hover:shadow-[0_0_40px_rgba(8,145,178,0.8)]"
-        >
-          INITIALIZE SYSTEMS
-        </button>
-        
-        <div className="mt-12 text-sm text-gray-600">
-          <p>WASD to Move • Mouse to Aim • Click to Shoot</p>
-        </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-50 text-center p-4">
+        <Loader2 size={64} className="text-cyan-400 animate-spin mb-6" />
+        <h2 className="text-2xl font-display font-bold text-cyan-400 tracking-[0.5em] animate-pulse">
+          INITIALIZING SYSTEMS...
+        </h2>
       </div>
     );
+  }
+
+  // Fallback if somehow we are in MENU state (unused now)
+  if (gameState === GameState.MENU) {
+      return null; 
   }
 
   if (gameState === GameState.GAME_OVER) {
@@ -75,7 +66,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           {loadingAnomaly ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 size={48} className="text-purple-400 animate-spin mb-4" />
-              <p className="text-purple-300 font-mono animate-pulse">DECODING ALIEN SIGNAL...</p>
+              <p className="text-purple-300 font-mono animate-pulse">Loading...</p>
             </div>
           ) : anomaly ? (
             <div className="relative z-10">
@@ -164,7 +155,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
          <span className="mx-2">•</span>
          <span className="bg-white/10 px-2 py-1 rounded mx-1">MOUSE</span> AIM 
          <span className="mx-2">•</span>
-         <span className="bg-white/10 px-2 py-1 rounded mx-1">LMB</span> FIRE
+         <span className="bg-white/10 px-2 py-1 rounded mx-1">AUTO</span> FIRE
       </div>
     </div>
   );
