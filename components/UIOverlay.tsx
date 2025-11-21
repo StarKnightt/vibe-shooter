@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameState, PlayerStats, AnomalyEvent } from '../types';
-import { Heart, Loader2, ShieldAlert, Coins, Crosshair, Github } from 'lucide-react';
+import { Heart, Loader2, ShieldAlert, Coins, Crosshair, Github, RotateCw } from 'lucide-react';
 
 interface UIOverlayProps {
   gameState: GameState;
@@ -47,7 +47,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
         <p className="text-xl text-gray-300 mb-8">Scrap Collected: {stats.scrap}</p>
         <button
           onClick={onRestart}
-          className="px-8 py-3 bg-white text-red-900 hover:bg-gray-200 rounded-full font-bold text-lg transition-colors"
+          className="px-8 py-3 bg-white text-red-900 hover:bg-gray-200 rounded-full font-bold text-lg transition-colors pointer-events-auto"
         >
           REBOOT SEQUENCE
         </button>
@@ -86,7 +86,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                   <button
                     key={idx}
                     onClick={() => onOptionSelect(idx)}
-                    className="group relative p-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-purple-400 rounded-lg text-left transition-all overflow-hidden"
+                    className="group relative p-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-purple-400 rounded-lg text-left transition-all overflow-hidden pointer-events-auto"
                   >
                      <div className="absolute inset-0 w-1 bg-purple-500 transition-all group-hover:w-full opacity-10"></div>
                      <h3 className="font-bold text-purple-200 mb-1 relative z-10">{option.text}</h3>
@@ -105,75 +105,84 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
 
   // HUD
   return (
-    <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between z-30">
-      {/* Top Bar */}
-      <div className="flex justify-between items-start">
-        <div className="flex gap-6">
-          {/* Health */}
-          <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[160px]">
-            <div className="bg-red-900/30 p-2 rounded-full">
-              <Heart className="text-red-500" size={20} />
-            </div>
-            <div>
-              <div className="text-xs text-gray-400 uppercase font-bold">Health 💖</div>
-              <div className="text-xl font-mono text-white">
-                {Math.max(0, Math.round(stats.health))} / {stats.maxHealth}
+    <>
+      {/* Mobile Rotation Warning */}
+      <div className="fixed inset-0 z-[60] bg-black flex-col items-center justify-center text-center p-8 hidden portrait:flex md:portrait:hidden">
+        <RotateCw size={64} className="text-cyan-400 animate-spin mb-6" />
+        <h2 className="text-2xl font-display font-bold text-white mb-2">ROTATE DEVICE</h2>
+        <p className="text-gray-400">Please rotate your device to landscape mode for optimal gameplay.</p>
+      </div>
+
+      <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between z-30">
+        {/* Top Bar */}
+        <div className="flex justify-between items-start">
+          <div className="flex gap-6">
+            {/* Health */}
+            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[160px]">
+              <div className="bg-red-900/30 p-2 rounded-full">
+                <Heart className="text-red-500" size={20} />
               </div>
-              <div className="w-full bg-gray-700 h-1 mt-1 rounded-full overflow-hidden">
-                <div 
-                  className="bg-red-500 h-full transition-all duration-300" 
-                  style={{ width: `${(stats.health / stats.maxHealth) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Scrap */}
-          <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[140px]">
-            <div className="bg-amber-900/30 p-2 rounded-full">
-              <Coins className="text-amber-400" size={20} />
-            </div>
-            <div>
-              <div className="text-xs text-gray-400 uppercase font-bold">Scrap</div>
-              <div className="text-xl font-mono text-white">{stats.scrap}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Score & Github */}
-        <div className="flex items-start gap-6 pointer-events-auto">
-            {/* GitHub Link */}
-            <a
-                href="https://github.com/StarKnightt/vibe-shooter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-gray-500 hover:text-white transition-all opacity-50 hover:opacity-100 bg-black/20 hover:bg-black/60 p-2 rounded-full backdrop-blur-sm h-fit"
-            >
-                <Github size={20} />
-                <span className="text-xs font-mono hidden group-hover:inline">/StarKnightt/vibe-shooter</span>
-            </a>
-
-            {/* Score */}
-            <div className="text-right pointer-events-none">
-                <div className="text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                    {stats.score.toString().padStart(6, '0')}
+              <div>
+                <div className="text-xs text-gray-400 uppercase font-bold">Health 💖</div>
+                <div className="text-xl font-mono text-white">
+                  {Math.max(0, Math.round(stats.health))} / {stats.maxHealth}
                 </div>
-                <div className="text-sm text-cyan-400 uppercase tracking-[0.3em]">Current Score</div>
+                <div className="w-full bg-gray-700 h-1 mt-1 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-red-500 h-full transition-all duration-300" 
+                    style={{ width: `${(stats.health / stats.maxHealth) * 100}%` }}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Scrap */}
+            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[140px]">
+              <div className="bg-amber-900/30 p-2 rounded-full">
+                <Coins className="text-amber-400" size={20} />
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase font-bold">Scrap</div>
+                <div className="text-xl font-mono text-white">{stats.scrap}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Score & Github */}
+          <div className="flex items-start gap-6 pointer-events-auto">
+              {/* GitHub Link */}
+              <a
+                  href="https://github.com/StarKnightt/vibe-shooter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-500 hover:text-white transition-all opacity-50 hover:opacity-100 bg-black/20 hover:bg-black/60 p-2 rounded-full backdrop-blur-sm h-fit"
+              >
+                  <Github size={20} />
+                  <span className="text-xs font-mono hidden group-hover:inline">/StarKnightt/vibe-shooter</span>
+              </a>
+
+              {/* Score */}
+              <div className="text-right pointer-events-none">
+                  <div className="text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                      {stats.score.toString().padStart(6, '0')}
+                  </div>
+                  <div className="text-sm text-cyan-400 uppercase tracking-[0.3em]">Current Score</div>
+              </div>
+          </div>
+        </div>
+
+        {/* Bottom Instructions */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center opacity-50 text-sm font-mono text-white pointer-events-none">
+           <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">WASD</span> 
+           <span className="hidden md:inline"> THRUST </span>
+           <span className="mx-2 hidden md:inline">•</span>
+           <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">MOUSE</span> 
+           <span className="hidden md:inline"> AIM </span>
+           <span className="mx-2 hidden md:inline">•</span>
+           <span className="bg-white/10 px-2 py-1 rounded mx-1">AUTO</span> FIRE
+           <span className="md:hidden block mt-2 text-xs opacity-70">TOUCH & DRAG TO MOVE/AIM</span>
         </div>
       </div>
-
-      {/* Bottom Instructions */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center opacity-50 text-sm font-mono text-white pointer-events-none">
-         <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">WASD</span> 
-         <span className="hidden md:inline"> THRUST </span>
-         <span className="mx-2 hidden md:inline">•</span>
-         <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">MOUSE</span> 
-         <span className="hidden md:inline"> AIM </span>
-         <span className="mx-2 hidden md:inline">•</span>
-         <span className="bg-white/10 px-2 py-1 rounded mx-1">AUTO</span> FIRE
-         <span className="md:hidden block mt-2 text-xs opacity-70">TOUCH & DRAG TO MOVE/AIM</span>
-      </div>
-    </div>
+    </>
   );
 };

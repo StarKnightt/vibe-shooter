@@ -81,7 +81,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // Touch Handlers
     const handleTouchStart = (e: TouchEvent) => {
-        e.preventDefault(); // Prevent scrolling
+        // Only prevent default if touching the canvas/gameplay area to allow UI buttons to work
+        // But we are listening on the canvas element ideally, but here we are on window for global capture
+        // If target is a button, don't prevent default
+        if ((e.target as HTMLElement).tagName === 'BUTTON') return;
+
+        e.preventDefault(); 
         
         for (let i = 0; i < e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -102,6 +107,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+        if ((e.target as HTMLElement).tagName === 'BUTTON') return;
         e.preventDefault();
         for (let i = 0; i < e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -113,6 +119,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
+        if ((e.target as HTMLElement).tagName === 'BUTTON') return;
         e.preventDefault();
         for (let i = 0; i < e.changedTouches.length; i++) {
             const t = e.changedTouches[i];
@@ -122,13 +129,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
     };
 
+    // Attach mouse/keyboard to window
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     
-    // Passive: false is required for preventDefault to work on touch events
+    // Attach touch to canvas specifically (or window but filter) - Using window with filter above for now
+    // To fix "Reboot" button not working, we must ensure the overlay (z-50) receives events.
+    // The overlay is above the canvas.
+    // We attached these to `window`. `touchstart` on button propagates to window.
+    // We called `preventDefault` which might stop the click.
+    // The check `if (tagName === 'BUTTON')` above fixes this.
+    
     window.addEventListener('touchstart', handleTouchStart, { passive: false });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -184,21 +198,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // Touch Input (Virtual Joystick - Left)
     if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
-        // We calculate relative to a fixed center point or just drag?
-        // Simple "drag from where you touched" is better but "virtual joystick center" is standard.
-        // Let's assume center of left screen for now or dynamically based on start? 
-        // For simplicity: The vector from center of left screen (width/4, height/2) to touch point
-        // OR simpler: Just use the touch position relative to player for movement? No, that's RTS style.
-        // Let's use simpler logic: Touch position relative to screen center? No.
-        
-        // Best simple approach without UI:
-        // If touch is in left half, it acts as a joystick relative to where you FIRST touched?
-        // Or simpler: Dragging anywhere on left half moves player.
-        // Actually, let's just stick to visual feedback later. For now logic:
-        // We need start position of touch to make it a joystick. 
-        // Since I didn't save start pos, let's make it absolute: 
-        // Touch relative to (WindowWidth/4, WindowHeight - 100) - Typical joystick pos
-        
         const t = touches.current[moveTouchId.current];
         const joystickCenterX = window.innerWidth / 4;
         const joystickCenterY = window.innerHeight - 150;
@@ -629,77 +628,82 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.restore();
     });
 
-    // Draw Mobile Controls (Virtual Joysticks)
-    // Always draw circles to indicate where controls are
-    const joystickRadius = 50;
-    const joystickKnobRadius = 20;
-    
-    // Left Joystick (Movement) - Bottom Left
-    const leftCenterX = window.innerWidth / 4;
-    const leftCenterY = window.innerHeight - 150;
-    
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(leftCenterX, leftCenterY, joystickRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    // Draw active knob for left joystick
-    if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
-        const t = touches.current[moveTouchId.current];
-        let dx = t.x - leftCenterX;
-        let dy = t.y - leftCenterY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > joystickRadius) {
-            dx = (dx / dist) * joystickRadius;
-            dy = (dy / dist) * joystickRadius;
-        }
-        
-        ctx.fillStyle = 'rgba(6, 182, 212, 0.5)'; // Cyan
-        ctx.beginPath();
-        ctx.arc(leftCenterX + dx, leftCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        // Center knob inactive
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.beginPath();
-        ctx.arc(leftCenterX, leftCenterY, joystickKnobRadius, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    // Draw Mobile Controls (Virtual Joysticks) - Only on touch devices (or small screens)
+    // Simple heuristic: if we have active touch points, or window width is small
+    const isMobile = window.innerWidth < 1024 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    // Right Joystick (Aiming) - Bottom Right
-    const rightCenterX = (window.innerWidth / 4) * 3;
-    const rightCenterY = window.innerHeight - 150;
-    
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.beginPath();
-    ctx.arc(rightCenterX, rightCenterY, joystickRadius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Draw active knob for right joystick
-    if (aimTouchId.current !== null && touches.current[aimTouchId.current]) {
-        const t = touches.current[aimTouchId.current];
-        let dx = t.x - rightCenterX;
-        let dy = t.y - rightCenterY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > joystickRadius) {
-            dx = (dx / dist) * joystickRadius;
-            dy = (dy / dist) * joystickRadius;
-        }
+    if (isMobile) {
+        // Always draw circles to indicate where controls are
+        const joystickRadius = 50;
+        const joystickKnobRadius = 20;
         
-        ctx.fillStyle = 'rgba(249, 115, 22, 0.5)'; // Orange
+        // Left Joystick (Movement) - Bottom Left
+        const leftCenterX = window.innerWidth / 4;
+        const leftCenterY = window.innerHeight - 150;
+        
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(rightCenterX + dx, rightCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        // Center knob inactive
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.arc(leftCenterX, leftCenterY, joystickRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Draw active knob for left joystick
+        if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
+            const t = touches.current[moveTouchId.current];
+            let dx = t.x - leftCenterX;
+            let dy = t.y - leftCenterY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > joystickRadius) {
+                dx = (dx / dist) * joystickRadius;
+                dy = (dy / dist) * joystickRadius;
+            }
+            
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.5)'; // Cyan
+            ctx.beginPath();
+            ctx.arc(leftCenterX + dx, leftCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // Center knob inactive
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.arc(leftCenterX, leftCenterY, joystickKnobRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Right Joystick (Aiming) - Bottom Right
+        const rightCenterX = (window.innerWidth / 4) * 3;
+        const rightCenterY = window.innerHeight - 150;
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.beginPath();
-        ctx.arc(rightCenterX, rightCenterY, joystickKnobRadius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(rightCenterX, rightCenterY, joystickRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw active knob for right joystick
+        if (aimTouchId.current !== null && touches.current[aimTouchId.current]) {
+            const t = touches.current[aimTouchId.current];
+            let dx = t.x - rightCenterX;
+            let dy = t.y - rightCenterY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > joystickRadius) {
+                dx = (dx / dist) * joystickRadius;
+                dy = (dy / dist) * joystickRadius;
+            }
+            
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.5)'; // Orange
+            ctx.beginPath();
+            ctx.arc(rightCenterX + dx, rightCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // Center knob inactive
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.arc(rightCenterX, rightCenterY, joystickKnobRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
     }
-    ctx.restore();
   };
 
   const loop = (time: number) => {
