@@ -33,6 +33,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const healthSpawnTimer = useRef(0);
   const lastAnomalyScore = useRef(0);
   
+  // Touch Controls State
+  const touches = useRef<Record<number, { x: number, y: number, type: 'move' | 'aim' }>>({});
+  const moveTouchId = useRef<number | null>(null);
+  const aimTouchId = useRef<number | null>(null);
+  
   // Initialize Game
   const initGame = () => {
     player.current = {
@@ -74,11 +79,59 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
     const handleMouseUp = (e: MouseEvent) => { keys.current['MouseLeft'] = false; };
 
+    // Touch Handlers
+    const handleTouchStart = (e: TouchEvent) => {
+        e.preventDefault(); // Prevent scrolling
+        
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            const x = t.clientX;
+            const y = t.clientY;
+            
+            // Left half of screen = movement
+            if (x < window.innerWidth / 2 && moveTouchId.current === null) {
+                moveTouchId.current = t.identifier;
+                touches.current[t.identifier] = { x, y, type: 'move' };
+            } 
+            // Right half = aiming
+            else if (x >= window.innerWidth / 2 && aimTouchId.current === null) {
+                aimTouchId.current = t.identifier;
+                touches.current[t.identifier] = { x, y, type: 'aim' };
+            }
+        }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            if (touches.current[t.identifier]) {
+                touches.current[t.identifier].x = t.clientX;
+                touches.current[t.identifier].y = t.clientY;
+            }
+        }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            delete touches.current[t.identifier];
+            if (moveTouchId.current === t.identifier) moveTouchId.current = null;
+            if (aimTouchId.current === t.identifier) aimTouchId.current = null;
+        }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    
+    // Passive: false is required for preventDefault to work on touch events
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -86,6 +139,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
 
@@ -118,10 +175,44 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // --- Player Movement ---
     const acc = { x: 0, y: 0 };
+    
+    // Keyboard Input
     if (keys.current['KeyW']) acc.y -= 1;
     if (keys.current['KeyS']) acc.y += 1;
     if (keys.current['KeyA']) acc.x -= 1;
     if (keys.current['KeyD']) acc.x += 1;
+
+    // Touch Input (Virtual Joystick - Left)
+    if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
+        // We calculate relative to a fixed center point or just drag?
+        // Simple "drag from where you touched" is better but "virtual joystick center" is standard.
+        // Let's assume center of left screen for now or dynamically based on start? 
+        // For simplicity: The vector from center of left screen (width/4, height/2) to touch point
+        // OR simpler: Just use the touch position relative to player for movement? No, that's RTS style.
+        // Let's use simpler logic: Touch position relative to screen center? No.
+        
+        // Best simple approach without UI:
+        // If touch is in left half, it acts as a joystick relative to where you FIRST touched?
+        // Or simpler: Dragging anywhere on left half moves player.
+        // Actually, let's just stick to visual feedback later. For now logic:
+        // We need start position of touch to make it a joystick. 
+        // Since I didn't save start pos, let's make it absolute: 
+        // Touch relative to (WindowWidth/4, WindowHeight - 100) - Typical joystick pos
+        
+        const t = touches.current[moveTouchId.current];
+        const joystickCenterX = window.innerWidth / 4;
+        const joystickCenterY = window.innerHeight - 150;
+        
+        const dx = t.x - joystickCenterX;
+        const dy = t.y - joystickCenterY;
+        
+        // Normalize
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len > 10) { // Deadzone
+            acc.x = dx / len;
+            acc.y = dy / len;
+        }
+    }
 
     // Normalize acceleration
     const len = Math.sqrt(acc.x * acc.x + acc.y * acc.y);
@@ -144,10 +235,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     p.pos.x = Math.max(p.radius, Math.min(CANVAS_WIDTH - p.radius, p.pos.x));
     p.pos.y = Math.max(p.radius, Math.min(CANVAS_HEIGHT - p.radius, p.pos.y));
 
-    // Rotation towards mouse
-    const dx = mouse.current.x - p.pos.x;
-    const dy = mouse.current.y - p.pos.y;
-    p.rotation = Math.atan2(dy, dx);
+    // Rotation logic
+    // Mouse
+    if (aimTouchId.current === null) {
+        const dx = mouse.current.x - p.pos.x;
+        const dy = mouse.current.y - p.pos.y;
+        p.rotation = Math.atan2(dy, dx);
+    } else {
+        // Touch Aim (Right Joystick)
+        const t = touches.current[aimTouchId.current];
+        const joystickCenterX = (window.innerWidth / 4) * 3;
+        const joystickCenterY = window.innerHeight - 150;
+        
+        const dx = t.x - joystickCenterX;
+        const dy = t.y - joystickCenterY;
+        p.rotation = Math.atan2(dy, dx);
+    }
 
     // --- Shooting (Automatic) ---
     const now = Date.now();
@@ -447,7 +550,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.fill();
     
     // Thruster flame
-    if (keys.current['KeyW']) {
+    if (keys.current['KeyW'] || (moveTouchId.current !== null && touches.current[moveTouchId.current])) {
         ctx.fillStyle = '#f97316';
         ctx.beginPath();
         ctx.moveTo(-12, 5);
@@ -525,6 +628,78 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       
       ctx.restore();
     });
+
+    // Draw Mobile Controls (Virtual Joysticks)
+    // Always draw circles to indicate where controls are
+    const joystickRadius = 50;
+    const joystickKnobRadius = 20;
+    
+    // Left Joystick (Movement) - Bottom Left
+    const leftCenterX = window.innerWidth / 4;
+    const leftCenterY = window.innerHeight - 150;
+    
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(leftCenterX, leftCenterY, joystickRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw active knob for left joystick
+    if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
+        const t = touches.current[moveTouchId.current];
+        let dx = t.x - leftCenterX;
+        let dy = t.y - leftCenterY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > joystickRadius) {
+            dx = (dx / dist) * joystickRadius;
+            dy = (dy / dist) * joystickRadius;
+        }
+        
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.5)'; // Cyan
+        ctx.beginPath();
+        ctx.arc(leftCenterX + dx, leftCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Center knob inactive
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.arc(leftCenterX, leftCenterY, joystickKnobRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Right Joystick (Aiming) - Bottom Right
+    const rightCenterX = (window.innerWidth / 4) * 3;
+    const rightCenterY = window.innerHeight - 150;
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.beginPath();
+    ctx.arc(rightCenterX, rightCenterY, joystickRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw active knob for right joystick
+    if (aimTouchId.current !== null && touches.current[aimTouchId.current]) {
+        const t = touches.current[aimTouchId.current];
+        let dx = t.x - rightCenterX;
+        let dy = t.y - rightCenterY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > joystickRadius) {
+            dx = (dx / dist) * joystickRadius;
+            dy = (dy / dist) * joystickRadius;
+        }
+        
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.5)'; // Orange
+        ctx.beginPath();
+        ctx.arc(rightCenterX + dx, rightCenterY + dy, joystickKnobRadius, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Center knob inactive
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.arc(rightCenterX, rightCenterY, joystickKnobRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
   };
 
   const loop = (time: number) => {
@@ -560,7 +735,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ref={canvasRef} 
         width={CANVAS_WIDTH} 
         height={CANVAS_HEIGHT} 
-        className="block bg-slate-900 cursor-crosshair"
+        className="block bg-slate-900 cursor-crosshair touch-none"
     />
   );
 };

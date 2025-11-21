@@ -165,11 +165,14 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
 
       {/* Bottom Instructions */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center opacity-50 text-sm font-mono text-white pointer-events-none">
-         <span className="bg-white/10 px-2 py-1 rounded mx-1">WASD</span> THRUST 
-         <span className="mx-2">•</span>
-         <span className="bg-white/10 px-2 py-1 rounded mx-1">MOUSE</span> AIM 
-         <span className="mx-2">•</span>
+         <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">WASD</span> 
+         <span className="hidden md:inline"> THRUST </span>
+         <span className="mx-2 hidden md:inline">•</span>
+         <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">MOUSE</span> 
+         <span className="hidden md:inline"> AIM </span>
+         <span className="mx-2 hidden md:inline">•</span>
          <span className="bg-white/10 px-2 py-1 rounded mx-1">AUTO</span> FIRE
+         <span className="md:hidden block mt-2 text-xs opacity-70">TOUCH & DRAG TO MOVE/AIM</span>
       </div>
     </div>
   );
