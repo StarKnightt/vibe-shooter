@@ -183,6 +183,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Main Game Loop
   const update = (deltaTime: number) => {
     if (gameState !== GameState.PLAYING) return;
+    
+    // Pause if on Mobile and Portrait
+    const isMobile = window.innerWidth < 1024 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isPortrait = window.innerHeight > window.innerWidth;
+    if (isMobile && isPortrait) return;
+
     if (!player.current) return;
 
     const p = player.current;
@@ -199,8 +205,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     // Touch Input (Virtual Joystick - Left)
     if (moveTouchId.current !== null && touches.current[moveTouchId.current]) {
         const t = touches.current[moveTouchId.current];
-        const joystickCenterX = window.innerWidth / 4;
-        const joystickCenterY = window.innerHeight - 150;
+        // Fixed position for joystick center (Bottom Left Corner)
+        const joystickCenterX = 120; 
+        const joystickCenterY = window.innerHeight - 120;
         
         const dx = t.x - joystickCenterX;
         const dy = t.y - joystickCenterY;
@@ -243,8 +250,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     } else {
         // Touch Aim (Right Joystick)
         const t = touches.current[aimTouchId.current];
-        const joystickCenterX = (window.innerWidth / 4) * 3;
-        const joystickCenterY = window.innerHeight - 150;
+        // Fixed position for joystick center (Bottom Right Corner)
+        const joystickCenterX = window.innerWidth - 120;
+        const joystickCenterY = window.innerHeight - 120;
         
         const dx = t.x - joystickCenterX;
         const dy = t.y - joystickCenterY;
@@ -638,8 +646,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         const joystickKnobRadius = 20;
         
         // Left Joystick (Movement) - Bottom Left
-        const leftCenterX = window.innerWidth / 4;
-        const leftCenterY = window.innerHeight - 150;
+        const leftCenterX = 120;
+        const leftCenterY = window.innerHeight - 120;
         
         ctx.save();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
@@ -672,8 +680,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
 
         // Right Joystick (Aiming) - Bottom Right
-        const rightCenterX = (window.innerWidth / 4) * 3;
-        const rightCenterY = window.innerHeight - 150;
+        const rightCenterX = window.innerWidth - 120;
+        const rightCenterY = window.innerHeight - 120;
         
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.beginPath();

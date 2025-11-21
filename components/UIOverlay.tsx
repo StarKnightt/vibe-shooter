@@ -113,18 +113,19 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
         <p className="text-gray-400">Please rotate your device to landscape mode for optimal gameplay.</p>
       </div>
 
-      <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between z-30">
+      <div className="absolute inset-0 pointer-events-none p-4 md:p-6 flex flex-col justify-between z-30">
         {/* Top Bar */}
-        <div className="flex justify-between items-start">
-          <div className="flex gap-6">
+        <div className="flex flex-col items-start gap-2 md:flex-row md:justify-between md:items-start">
+          <div className="flex gap-2 md:gap-6">
             {/* Health */}
-            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[160px]">
-              <div className="bg-red-900/30 p-2 rounded-full">
-                <Heart className="text-red-500" size={20} />
+            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-2 md:p-3 flex items-center gap-2 md:gap-3 min-w-[120px] md:min-w-[160px]">
+              <div className="bg-red-900/30 p-1.5 md:p-2 rounded-full">
+                <Heart className="text-red-500" size={16} />
+                <Heart className="text-red-500 hidden md:block" size={20} style={{ display: 'none' }} /> {/* Hack for icon scaling logic if needed, but simpler to just change props */}
               </div>
-              <div>
-                <div className="text-xs text-gray-400 uppercase font-bold">Health 💖</div>
-                <div className="text-xl font-mono text-white">
+              <div className="flex-1">
+                <div className="text-[10px] md:text-xs text-gray-400 uppercase font-bold">Health 💖</div>
+                <div className="text-lg md:text-xl font-mono text-white leading-none">
                   {Math.max(0, Math.round(stats.health))} / {stats.maxHealth}
                 </div>
                 <div className="w-full bg-gray-700 h-1 mt-1 rounded-full overflow-hidden">
@@ -137,25 +138,25 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             </div>
 
             {/* Scrap */}
-            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 flex items-center gap-3 min-w-[140px]">
-              <div className="bg-amber-900/30 p-2 rounded-full">
-                <Coins className="text-amber-400" size={20} />
+            <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-2 md:p-3 flex items-center gap-2 md:gap-3 min-w-[100px] md:min-w-[140px]">
+              <div className="bg-amber-900/30 p-1.5 md:p-2 rounded-full">
+                <Coins className="text-amber-400" size={16} />
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase font-bold">Scrap</div>
-                <div className="text-xl font-mono text-white">{stats.scrap}</div>
+                <div className="text-[10px] md:text-xs text-gray-400 uppercase font-bold">Scrap</div>
+                <div className="text-lg md:text-xl font-mono text-white leading-none">{stats.scrap}</div>
               </div>
             </div>
           </div>
 
           {/* Score & Github */}
-          <div className="flex items-start gap-6 pointer-events-auto">
-              {/* GitHub Link */}
+          <div className="flex items-start gap-6 pointer-events-auto absolute top-4 right-4 md:static">
+              {/* GitHub Link - Hidden on Mobile */}
               <a
                   href="https://github.com/StarKnightt/vibe-shooter"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-500 hover:text-white transition-all opacity-50 hover:opacity-100 bg-black/20 hover:bg-black/60 p-2 rounded-full backdrop-blur-sm h-fit"
+                  className="hidden md:flex items-center gap-2 text-gray-500 hover:text-white transition-all opacity-50 hover:opacity-100 bg-black/20 hover:bg-black/60 p-2 rounded-full backdrop-blur-sm h-fit"
               >
                   <Github size={20} />
                   <span className="text-xs font-mono hidden group-hover:inline">/StarKnightt/vibe-shooter</span>
@@ -163,10 +164,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
 
               {/* Score */}
               <div className="text-right pointer-events-none">
-                  <div className="text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                  <div className="text-2xl md:text-4xl font-display font-bold text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                       {stats.score.toString().padStart(6, '0')}
                   </div>
-                  <div className="text-sm text-cyan-400 uppercase tracking-[0.3em]">Current Score</div>
+                  <div className="text-[10px] tracking-widest md:text-sm text-cyan-400 uppercase md:tracking-[0.3em]">Current Score</div>
               </div>
           </div>
         </div>
@@ -179,7 +180,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
            <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden md:inline">MOUSE</span> 
            <span className="hidden md:inline"> AIM </span>
            <span className="mx-2 hidden md:inline">•</span>
-           <span className="bg-white/10 px-2 py-1 rounded mx-1">AUTO</span> FIRE
+           <span className="bg-white/10 px-2 py-1 rounded mx-1 hidden">AUTO FIRE</span>
            <span className="md:hidden block mt-2 text-xs opacity-70">TOUCH & DRAG TO MOVE/AIM</span>
         </div>
       </div>
